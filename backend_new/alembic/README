@@ -1,0 +1,8 @@
+Generic single-database configuration for Alembic.
+
+This is set up for use with Neon PostgreSQL and Vercel deployment.
+
+Usage:
+- Create migration: alembic revision --autogenerate -m "description"
+- Apply migrations: alembic upgrade head
+- Rollback: alembic downgrade -1

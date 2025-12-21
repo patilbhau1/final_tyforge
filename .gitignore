@@ -1,0 +1,60 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.Python
+venv/
+env/
+.venv/
+ENV/
+
+# Environment variables (DO NOT COMMIT SECRETS)
+.env
+.env.local
+.env.production
+.env.*.local
+
+# Database
+*.db
+*.sqlite3
+tmp.db
+
+# Node
+node_modules/
+dist/
+.vercel/
+.next/
+build/
+
+# Uploads (contains user data)
+backend_new/uploads/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*.sublime-*
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Test coverage
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Alembic (optional: you may want to keep migrations)
+# backend_new/alembic/versions/*.pyc
