@@ -26,39 +26,100 @@ app = FastAPI(
     version="2.0.0"
 )
 
-# Register exception handlers
-app.add_exception_handler(AppException, app_exception_handler)
-app.add_exception_handler(SQLAlchemyError, sqlalchemy_exception_handler)
-app.add_exception_handler(Exception, general_exception_handler)
+# ⚠️ CRITICAL: CORS middleware MUST be registered FIRST
+# This ensures OPTIONS preflight requests get proper headers before exception handlers run
 
-# CORS middleware
-# Configure CORS - restrict in production
+# Dynamic CORS configuration based on environment
 allowed_origins = [
-    settings.FRONTEND_URL,
-    "https://tyforge.in",
-    "https://www.tyforge.in",
-    "https://tyforge11.vercel.app",
+    settings.FRONTEND_URL,  # Primary frontend URL from environment
     "http://localhost:8080",
     "http://localhost:5173",
     "http://localhost:3000",
-    "http://127.0.0.1:8080",
     "http://127.0.0.1:5173",
+    "http://127.0.0.1:8080",
 ]
 
-# Only allow all origins in development (when SECRET_KEY contains 'dev')
-if "dev" in settings.SECRET_KEY.lower():
-    print("⚠️  WARNING: Running in development mode with permissive CORS. DO NOT use in production!")
-    allowed_origins.append("*")
-else:
-    print(f"✅ Running in production mode with restricted CORS: {allowed_origins}")
+# Add production domains
+production_domains = [
+    "https://tyforge.in",
+    "https://www.tyforge.in",
+    "http://tyforge.in",
+    "http://www.tyforge.in",
+]
+allowed_origins.extend(production_domains)
 
+# Remove duplicates and None values
+allowed_origins = list(set(filter(None, allowed_origins)))
+
+logging.info(f"🔒 CORS allowed origins: {allowed_origins}")
+
+# Custom CORS middleware to handle Vercel preview deployments
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
+
+class CustomCORSMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        origin = request.headers.get("origin")
+        
+        # Check if origin is allowed
+        is_allowed = False
+        if origin:
+            # Exact match
+            if origin in allowed_origins:
+                is_allowed = True
+            # Allow all *.vercel.app domains
+            elif origin.endswith(".vercel.app") and origin.startswith("https://"):
+                is_allowed = True
+            # Allow all *.onrender.com domains
+            elif origin.endswith(".onrender.com") and origin.startswith("https://"):
+                is_allowed = True
+        
+        # Handle preflight requests
+        if request.method == "OPTIONS":
+            if is_allowed:
+                return Response(
+                    content="",
+                    status_code=200,
+                    headers={
+                        "Access-Control-Allow-Origin": origin,
+                        "Access-Control-Allow-Methods": "*",
+                        "Access-Control-Allow-Headers": "*",
+                        "Access-Control-Allow-Credentials": "true",
+                        "Access-Control-Max-Age": "600",
+                    }
+                )
+        
+        response = await call_next(request)
+        
+        # Add CORS headers to response if origin is allowed
+        if is_allowed and origin:
+            response.headers["Access-Control-Allow-Origin"] = origin
+            response.headers["Access-Control-Allow-Credentials"] = "true"
+            response.headers["Access-Control-Allow-Methods"] = "*"
+            response.headers["Access-Control-Allow-Headers"] = "*"
+            response.headers["Access-Control-Expose-Headers"] = "*"
+        
+        return response
+
+from starlette.responses import Response
+
+# Apply custom CORS middleware
+app.add_middleware(CustomCORSMiddleware)
+
+# Also add standard CORS middleware as fallback
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
+
+# Register exception handlers (AFTER CORS)
+app.add_exception_handler(AppException, app_exception_handler)
+app.add_exception_handler(SQLAlchemyError, sqlalchemy_exception_handler)
+app.add_exception_handler(Exception, general_exception_handler)
 
 # Include routers
 app.include_router(auth.router)
