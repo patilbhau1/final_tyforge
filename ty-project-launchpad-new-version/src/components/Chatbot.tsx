@@ -138,28 +138,13 @@ Assistant: "Nice to meet you, Sarah! What's the name of your project?"`;
         mappedMessages[firstUserMessageIndex].parts[0].text = systemPrompt + "\n\n" + mappedMessages[firstUserMessageIndex].parts[0].text;
       }
 
-      // Use backend API which calls Grok (X.AI)
-      // Fallback to intelligent responses if API is not available
-      let response;
-      try {
-        // Try calling backend if available
-        const backendUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
-        response = await axios.post(`${backendUrl}/api/chatbot/chat`, {
-          messages: newMessages.map(msg => ({
-            role: msg.role,
-            content: msg.content
-          })),
-          system_prompt: systemPrompt
-        }, {
-          timeout: 10000 // 10 second timeout
-        });
-      } catch (apiError) {
-        // If backend is not available or doesn't have the endpoint, use fallback
-        console.log('Backend API not available, using intelligent fallback');
-        throw apiError; // Let the outer catch handle it
-      }
-
-      let botMessage = response.data.choices[0]?.message?.content?.trim() || "I'm sorry, I didn't get that. Could you please rephrase?";
+      // For now, use intelligent fallback responses
+      // Backend doesn't have dedicated chatbot endpoint yet
+      console.log('Using intelligent fallback responses for chatbot');
+      
+      // Generate intelligent fallback response
+      const conversationContext = newMessages.map(msg => `${msg.role}: ${msg.content}`).join('\n');
+      let botMessage = getChatbotFallbackResponse(userInput, plan, conversationContext);
       
       // Determine if finalize should be shown based on AI response
       const aiTriggeredFinalize = botMessage.includes('[FINALIZE]');

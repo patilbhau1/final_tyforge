@@ -45,6 +45,8 @@ production_domains = [
     "https://www.tyforge.in",
     "http://tyforge.in",
     "http://www.tyforge.in",
+    # Ngrok URLs (for development/testing)
+    "https://05401f824dee.ngrok-free.app",
 ]
 allowed_origins.extend(production_domains)
 
