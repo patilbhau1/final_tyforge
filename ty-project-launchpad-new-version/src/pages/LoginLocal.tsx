@@ -16,8 +16,8 @@ const LoginLocal = () => {
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
 
-  // Show email login only on localhost
-  const isLocalhost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+  // Show email login on localhost and production
+  const isLocalhost = true; // Enable email login for all environments
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();

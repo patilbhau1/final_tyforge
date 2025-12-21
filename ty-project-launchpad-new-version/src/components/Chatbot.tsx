@@ -39,8 +39,8 @@ const Chatbot = ({ plan, onClose, onFinalize }: ChatbotProps) => {
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
   const isMobile = useIsMobile();
 
-  const apiKey = import.meta.env.VITE_GROQ_API_KEY;
-  const apiUrl = import.meta.env.VITE_GROQ_API_URI;
+  // Chatbot now uses backend API which handles Grok (X.AI)
+  // No need for frontend API keys
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -138,21 +138,26 @@ Assistant: "Nice to meet you, Sarah! What's the name of your project?"`;
         mappedMessages[firstUserMessageIndex].parts[0].text = systemPrompt + "\n\n" + mappedMessages[firstUserMessageIndex].parts[0].text;
       }
 
-      // Use Groq API instead of Google Gemini - much better rate limits
-      const groqMessages = [
-        { role: 'system', content: systemPrompt },
-        ...newMessages.map(msg => ({
-          role: msg.role === 'assistant' ? 'assistant' : 'user',
-          content: msg.content
-        }))
-      ];
-
-      const response = await axios.post(`${apiUrl}/chat`, {
-        messages: groqMessages,
-        model: 'llama-3.1-8b-instant',
-        max_tokens: 500,
-        temperature: 0.7
-      });
+      // Use backend API which calls Grok (X.AI)
+      // Fallback to intelligent responses if API is not available
+      let response;
+      try {
+        // Try calling backend if available
+        const backendUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+        response = await axios.post(`${backendUrl}/api/chatbot/chat`, {
+          messages: newMessages.map(msg => ({
+            role: msg.role,
+            content: msg.content
+          })),
+          system_prompt: systemPrompt
+        }, {
+          timeout: 10000 // 10 second timeout
+        });
+      } catch (apiError) {
+        // If backend is not available or doesn't have the endpoint, use fallback
+        console.log('Backend API not available, using intelligent fallback');
+        throw apiError; // Let the outer catch handle it
+      }
 
       let botMessage = response.data.choices[0]?.message?.content?.trim() || "I'm sorry, I didn't get that. Could you please rephrase?";
       
