@@ -35,6 +35,9 @@ app.add_exception_handler(Exception, general_exception_handler)
 # Configure CORS - restrict in production
 allowed_origins = [
     settings.FRONTEND_URL,
+    "https://tyforge.in",
+    "https://www.tyforge.in",
+    "https://tyforge11.vercel.app",
     "http://localhost:8080",
     "http://localhost:5173",
     "http://localhost:3000",
