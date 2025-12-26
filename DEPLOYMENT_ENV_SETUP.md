@@ -131,6 +131,5 @@ FRONTEND_URL=https://tyforge.in
 
 ## Files Reference:
 
-- `frontend/.env.production` - Frontend production config template
-- `backend/.env.production` - Backend production config template
-- Use these as reference when setting environment variables in Vercel/Render dashboards
+- See this guide for all required environment variables
+- Set them directly in Vercel/Render dashboards (don't commit .env.production files with secrets)
