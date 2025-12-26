@@ -3,7 +3,7 @@
 Run script for TY Project Launchpad Backend
 """
 import uvicorn
-from app.services.init_db import init_database
+from app.services.init_db_fixed import init_database
 
 if __name__ == "__main__":
     print("=" * 60)

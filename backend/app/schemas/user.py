@@ -27,12 +27,12 @@ class UserResponse(BaseModel):
     name: str
     phone: str
     is_admin: bool
-    signup_step: str
-    selected_plan_id: Optional[str]
-    has_synopsis: bool
-    needs_idea_generation: bool
-    onboarding_completed: bool
-    created_at: datetime
+    signup_step: Optional[str] = "basic_info"
+    selected_plan_id: Optional[str] = None
+    has_synopsis: Optional[bool] = False
+    needs_idea_generation: Optional[bool] = False
+    onboarding_completed: Optional[bool] = False
+    created_at: Optional[datetime] = None
     
     class Config:
         from_attributes = True

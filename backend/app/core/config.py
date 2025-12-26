@@ -26,6 +26,10 @@ class Settings(BaseSettings):
     XAI_API_KEY: str = ""
     XAI_MODEL: str = "grok-2-latest"
     
+    # Groq API (Fallback)
+    GROQ_API_KEY: str = ""
+    GROQ_MODEL: str = "llama-3.3-70b-versatile"
+    
     # Admin
     ADMIN_EMAIL: str
     ADMIN_PASSWORD: str

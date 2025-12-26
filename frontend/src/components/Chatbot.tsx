@@ -39,8 +39,10 @@ const Chatbot = ({ plan, onClose, onFinalize }: ChatbotProps) => {
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
   const isMobile = useIsMobile();
 
-  // Chatbot now uses backend API which handles Grok (X.AI)
+  // Chatbot now uses backend API which handles Groq/Grok
   // No need for frontend API keys
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+  const [sessionId, setSessionId] = useState<string | null>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -64,19 +66,23 @@ const Chatbot = ({ plan, onClose, onFinalize }: ChatbotProps) => {
     }
   }, [plan]);
 
-    const summarizeText = async (text: string): Promise<string> => {
+  const summarizeText = async (text: string): Promise<string> => {
     try {
-      const response = await axios.post(`${apiUrl}/summarize`, {
+      const token = localStorage.getItem('tyforge_token');
+      const response = await axios.post(`${API_BASE_URL}/api/chatbot/summarize`, {
         text: text,
-        model: 'llama-3.1-8b-instant',
         max_tokens: 150,
         temperature: 0.5
+      }, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
       });
       
       return response.data.summary?.trim() || 
         "Here's a summary of your project requirements:";
     } catch (error) {
-      console.error('Groq Summarization API Error:', error);
+      console.error('Summarization API Error:', error);
       return "Here's a summary of your project requirements:";
     }
   };
@@ -138,24 +144,45 @@ Assistant: "Nice to meet you, Sarah! What's the name of your project?"`;
         mappedMessages[firstUserMessageIndex].parts[0].text = systemPrompt + "\n\n" + mappedMessages[firstUserMessageIndex].parts[0].text;
       }
 
-      // For now, use intelligent fallback responses
-      // Backend doesn't have dedicated chatbot endpoint yet
-      console.log('Using intelligent fallback responses for chatbot');
-      
-      // Generate intelligent fallback response
-      const conversationContext = newMessages.map(msg => `${msg.role}: ${msg.content}`).join('\n');
-      let botMessage = getChatbotFallbackResponse(userInput, plan, conversationContext);
-      
-      // Determine if finalize should be shown based on AI response
-      const aiTriggeredFinalize = botMessage.includes('[FINALIZE]');
-      if (aiTriggeredFinalize) {
-        botMessage = botMessage.replace('[FINALIZE]', '').trim();
+      // Call backend chatbot API
+      try {
+        const token = localStorage.getItem('tyforge_token');
+        const response = await axios.post(`${API_BASE_URL}/api/chatbot/chat`, {
+          messages: newMessages.map(msg => ({ role: msg.role, content: msg.content })),
+          plan_name: plan.name,
+          session_id: sessionId
+        }, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        const data = response.data;
+        setSessionId(data.session_id);
+        
+        const botMessage = data.message;
+        const aiTriggeredFinalize = data.should_finalize;
+        
+        // Set showFinalize if either user or AI triggered it
+        setShowFinalize(userTriggeredFinalize || aiTriggeredFinalize);
+        
+        setMessages(prev => [...prev, { role: 'assistant', content: botMessage }]);
+      } catch (apiError) {
+        console.error('Chatbot API Error:', apiError);
+        
+        // Fallback to intelligent responses if API fails
+        console.log('API failed, using intelligent fallback responses');
+        const conversationContext = newMessages.map(msg => `${msg.role}: ${msg.content}`).join('\n');
+        let botMessage = getChatbotFallbackResponse(userInput, plan, conversationContext);
+        
+        const aiTriggeredFinalize = botMessage.includes('[FINALIZE]');
+        if (aiTriggeredFinalize) {
+          botMessage = botMessage.replace('[FINALIZE]', '').trim();
+        }
+        
+        setShowFinalize(userTriggeredFinalize || aiTriggeredFinalize);
+        setMessages(prev => [...prev, { role: 'assistant', content: botMessage }]);
       }
-
-      // Set showFinalize if either user or AI triggered it
-      setShowFinalize(userTriggeredFinalize || aiTriggeredFinalize);
-
-      setMessages(prev => [...prev, { role: 'assistant', content: botMessage }]);
     } catch (error) {
       console.error('Chat API Error:', error);
       

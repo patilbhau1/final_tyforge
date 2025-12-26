@@ -2,6 +2,6 @@
 echo ============================================================
 echo Starting TY Project Launchpad - BACKEND
 echo ============================================================
-cd backend_new
+cd backend
 python run.py
 pause

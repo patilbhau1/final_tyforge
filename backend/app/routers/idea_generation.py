@@ -41,11 +41,11 @@ async def generate_project_idea(
     authorization: Optional[str] = Header(None)
 ):
     """
-    Generate a unique project idea using X.AI Grok API
+    Generate a unique project idea using X.AI Grok API with Groq fallback
     Works for both authenticated and guest users
     """
-    if not settings.XAI_API_KEY:
-        raise HTTPException(status_code=500, detail="X.AI API key not configured")
+    if not settings.XAI_API_KEY and not settings.GROQ_API_KEY:
+        raise HTTPException(status_code=500, detail="AI API keys not configured")
     
     try:
         # Analyze user input to determine if it's specific or vague
@@ -85,37 +85,88 @@ Requirements:
 
 Format: Just provide the project idea description, nothing else."""
 
-        # Call X.AI Grok API
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.post(
-                "https://api.x.ai/v1/chat/completions",
-                headers={
-                    "Authorization": f"Bearer {settings.XAI_API_KEY}",
-                    "Content-Type": "application/json"
-                },
-                json={
-                    "messages": [
-                        {
-                            "role": "system",
-                            "content": "You are a helpful engineering project advisor who generates unique and innovative project ideas."
+        generated_idea = None
+        api_used = "unknown"
+        
+        # Try Grok first if API key is available
+        if settings.XAI_API_KEY:
+            try:
+                logger.info("Attempting to generate idea using Grok API...")
+                async with httpx.AsyncClient(timeout=30.0) as client:
+                    response = await client.post(
+                        "https://api.x.ai/v1/chat/completions",
+                        headers={
+                            "Authorization": f"Bearer {settings.XAI_API_KEY}",
+                            "Content-Type": "application/json"
                         },
-                        {
-                            "role": "user",
-                            "content": prompt
+                        json={
+                            "messages": [
+                                {
+                                    "role": "system",
+                                    "content": "You are a helpful engineering project advisor who generates unique and innovative project ideas."
+                                },
+                                {
+                                    "role": "user",
+                                    "content": prompt
+                                }
+                            ],
+                            "model": settings.XAI_MODEL,
+                            "stream": False,
+                            "temperature": 0.8
                         }
-                    ],
-                    "model": settings.XAI_MODEL,
-                    "stream": False,
-                    "temperature": 0.8
-                }
-            )
+                    )
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    generated_idea = data['choices'][0]['message']['content'].strip()
+                    api_used = "grok"
+                    logger.info("✅ Idea generated successfully using Grok")
+                else:
+                    logger.warning(f"Grok API failed: {response.status_code} - {response.text[:200]}")
+            except Exception as e:
+                logger.warning(f"Grok API error: {str(e)}")
         
-        if response.status_code != 200:
-            logger.error(f"X.AI API error: {response.status_code} - {response.text}")
-            raise HTTPException(status_code=500, detail="Failed to generate idea from AI")
+        # Fallback to Groq if Grok failed or not configured
+        if not generated_idea and settings.GROQ_API_KEY:
+            try:
+                logger.info("Falling back to Groq API...")
+                async with httpx.AsyncClient(timeout=30.0) as client:
+                    response = await client.post(
+                        "https://api.groq.com/openai/v1/chat/completions",
+                        headers={
+                            "Authorization": f"Bearer {settings.GROQ_API_KEY}",
+                            "Content-Type": "application/json"
+                        },
+                        json={
+                            "messages": [
+                                {
+                                    "role": "system",
+                                    "content": "You are a helpful engineering project advisor who generates unique and innovative project ideas."
+                                },
+                                {
+                                    "role": "user",
+                                    "content": prompt
+                                }
+                            ],
+                            "model": settings.GROQ_MODEL,
+                            "temperature": 0.8,
+                            "max_tokens": 500
+                        }
+                    )
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    generated_idea = data['choices'][0]['message']['content'].strip()
+                    api_used = "groq"
+                    logger.info("✅ Idea generated successfully using Groq (fallback)")
+                else:
+                    logger.error(f"Groq API failed: {response.status_code} - {response.text}")
+            except Exception as e:
+                logger.error(f"Groq API error: {str(e)}")
         
-        data = response.json()
-        generated_idea = data['choices'][0]['message']['content'].strip()
+        # If both failed, raise error
+        if not generated_idea:
+            raise HTTPException(status_code=500, detail="Failed to generate idea from AI services")
         
         # Log generation (user info optional)
         user_info = "guest user"

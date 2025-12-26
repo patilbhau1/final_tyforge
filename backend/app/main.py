@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.database import engine, Base
-from app.routers import auth, users, orders, projects, synopsis, meetings, plans, admin, blackbook, select_plan, compatibility, idea_generation, payment_proof, approved_ideas
+from app.routers import auth, users, orders, projects, synopsis, meetings, plans, admin, blackbook, select_plan, compatibility, idea_generation, payment_proof, approved_ideas, chatbot
 from app.core.exceptions import (
     AppException, app_exception_handler,
     sqlalchemy_exception_handler, general_exception_handler
@@ -138,6 +138,7 @@ app.include_router(compatibility.router)
 app.include_router(idea_generation.router)
 app.include_router(approved_ideas.router)
 app.include_router(payment_proof.router)  # Legacy/compatibility endpoints
+app.include_router(chatbot.router)
 
 @app.get("/")
 async def root():
