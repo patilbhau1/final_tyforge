@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     
     # X.AI Grok API
     XAI_API_KEY: str = ""
-    XAI_MODEL: str = "grok-2-latest"
+    XAI_MODEL: str = "grok-beta"
     
     # Groq API (Fallback)
     GROQ_API_KEY: str = ""
