@@ -10,11 +10,16 @@ import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { toast } from "@/components/ui/use-toast";
 import { useDropzone } from "react-dropzone";
+import { handleApiError, handleApiSuccess } from "@/utils/errorHandler";
 import { API_ENDPOINTS, API_BASE_URL, getAuthHeaders, getAuthHeadersForUpload } from "@/config/api";
+
+const API_BASE = `${API_BASE_URL}/api`;
+const getToken = () => localStorage.getItem("tyforge_token");
 
 const ProjectSetup = () => {
   const [activeTab, setActiveTab] = useState<"upload" | "generate">("upload");
   const [projectTitle, setProjectTitle] = useState("");
+  const [files, setFiles] = useState([]);
   const [projectDescription, setProjectDescription] = useState("");
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -61,47 +66,39 @@ const ProjectSetup = () => {
     try {
       setIsProcessing(true);
       const token = localStorage.getItem("tyforge_token");
-      
-      // First create a project entry
-      const projectResponse = await fetch(API_ENDPOINTS.PROJECT_IDEAS.CREATE, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          title: "User Provided Project",
-          description: "Project with user-provided synopsis",
-          idea_generated: false,
-        }),
-      });
 
-      if (!projectResponse.ok) throw new Error("Failed to create project");
-      
-      const projectData = await projectResponse.json();
-      
+      // First create a project entry - update no need for entry in case of synopsis upload
+
       // Upload the synopsis file
       const formData = new FormData();
       formData.append("file", uploadedFile);
-      
-      const uploadResponse = await fetch(
-        API_ENDPOINTS.PROJECT_IDEAS.UPLOAD_SYNOPSIS(projectData.id),
-        {
+      try {
+        const formData = new FormData();
+        formData.append("file", uploadedFile);
+        const res = await fetch(`${API_BASE}/synopsis/upload`, {
           method: "POST",
-          headers: {
-            "Authorization": `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${getToken()}` },
           body: formData,
-        }
-      );
+        });
+        if (!res.ok) throw new Error("Upload failed");
+        handleApiSuccess("Synopsis uploaded successfully");
+        setUploadedFile(null);
+        // Refresh
+        const newRes = await fetch(`${API_BASE}/synopsis`, {
+          headers: { Authorization: `Bearer ${getToken()}` },
+        });
+        setFiles(await newRes.json());
+      } catch (error) {
+        handleApiError(error, "Upload failed");
+      } finally {
+        setIsProcessing(false);
+      }
 
-      if (!uploadResponse.ok) throw new Error("Failed to upload synopsis");
-      
       toast({
         title: "Success",
         description: "Synopsis uploaded successfully! Redirecting to dashboard...",
       });
-      
+
       // Redirect to dashboard after a short delay
       setTimeout(() => {
         navigate("/dashboard");
@@ -132,7 +129,7 @@ const ProjectSetup = () => {
       });
 
       if (!response.ok) throw new Error("Failed to generate idea");
-      
+
       const data = await response.json();
       return data.idea;
     } catch (error) {
@@ -157,7 +154,7 @@ const ProjectSetup = () => {
       const idea = await generateAIIdea(fieldOfInterest);
       setGeneratedIdeas([idea]); // Single idea
       setShowIdeas(true);
-      
+
       toast({
         title: "Success",
         description: "Generated a unique project idea for you!",
@@ -172,12 +169,12 @@ const ProjectSetup = () => {
       setIsProcessing(false);
     }
   };
-  
+
   const handleSelectIdea = async (idea: string) => {
     try {
       setIsProcessing(true);
       const token = localStorage.getItem("tyforge_token");
-      
+
       const response = await fetch(API_ENDPOINTS.PROJECT_IDEAS.CREATE, {
         method: "POST",
         headers: {
@@ -192,12 +189,12 @@ const ProjectSetup = () => {
       });
 
       if (!response.ok) throw new Error("Failed to save project idea");
-      
+
       toast({
         title: "Success",
         description: "Project idea saved! Redirecting to dashboard...",
       });
-      
+
       setTimeout(() => navigate("/dashboard"), 2000);
     } catch (error: any) {
       toast({
@@ -217,7 +214,7 @@ const ProjectSetup = () => {
   return (
     <div className="min-h-screen bg-white">
       <Header />
-      
+
       <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-12">
@@ -232,22 +229,20 @@ const ProjectSetup = () => {
           <div className="flex justify-center mb-8">
             <div className="bg-gray-100 p-1 rounded-lg">
               <button
-                className={`px-6 py-2 rounded-md font-medium transition-all ${
-                  activeTab === "upload"
-                    ? "bg-white text-blue-600 shadow-sm"
-                    : "text-gray-600 hover:text-gray-900"
-                }`}
+                className={`px-6 py-2 rounded-md font-medium transition-all ${activeTab === "upload"
+                  ? "bg-white text-blue-600 shadow-sm"
+                  : "text-gray-600 hover:text-gray-900"
+                  }`}
                 onClick={() => setActiveTab("upload")}
               >
                 <Upload className="inline-block w-4 h-4 mr-2" />
                 Upload Synopsis
               </button>
               <button
-                className={`px-6 py-2 rounded-md font-medium transition-all ${
-                  activeTab === "generate"
-                    ? "bg-white text-blue-600 shadow-sm"
-                    : "text-gray-600 hover:text-gray-900"
-                }`}
+                className={`px-6 py-2 rounded-md font-medium transition-all ${activeTab === "generate"
+                  ? "bg-white text-blue-600 shadow-sm"
+                  : "text-gray-600 hover:text-gray-900"
+                  }`}
                 onClick={() => setActiveTab("generate")}
               >
                 <Lightbulb className="inline-block w-4 h-4 mr-2" />
@@ -267,11 +262,10 @@ const ProjectSetup = () => {
               <CardContent className="space-y-6">
                 <div
                   {...getRootProps()}
-                  className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-all ${
-                    isDragActive
-                      ? "border-blue-500 bg-blue-50"
-                      : "border-gray-300 hover:border-gray-400"
-                  }`}
+                  className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-all ${isDragActive
+                    ? "border-blue-500 bg-blue-50"
+                    : "border-gray-300 hover:border-gray-400"
+                    }`}
                 >
                   <input {...getInputProps()} />
                   <FileText className="mx-auto h-12 w-12 text-gray-400 mb-4" />
@@ -355,7 +349,7 @@ const ProjectSetup = () => {
                         <div>
                           <h4 className="font-medium text-blue-900 mb-1">How it works</h4>
                           <p className="text-blue-800 text-sm">
-                            Our AI (powered by X.AI Grok) will generate a unique project idea tailored to your interests. 
+                            Our AI (powered by X.AI Grok) will generate a unique project idea tailored to your interests.
                             Review it and if you like it, accept to save it!
                           </p>
                         </div>
@@ -407,7 +401,7 @@ const ProjectSetup = () => {
                           Try Different Interest
                         </Button>
                       </div>
-                      
+
                       {generatedIdeas.map((idea, index) => (
                         <Card key={index} className="border-2 hover:border-blue-500 transition-all cursor-pointer">
                           <CardContent className="p-4">
