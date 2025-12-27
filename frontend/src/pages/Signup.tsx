@@ -6,8 +6,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { FcGoogle } from "react-icons/fc";
 import { toast } from "@/components/ui/use-toast";
 import { API_ENDPOINTS } from "@/config/api";
 
@@ -17,29 +15,7 @@ const Signup = () => {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const [showEmailForm, setShowEmailForm] = useState(false);
   const navigate = useNavigate();
-
-  const handleGoogleSignup = async () => {
-    try {
-      setIsLoading(true);
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo: window.location.origin + "/auth/callback"
-        }
-      });
-      if (error) throw error;
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleEmailSignup = async (e: React.FormEvent) => {
     e.preventDefault();
