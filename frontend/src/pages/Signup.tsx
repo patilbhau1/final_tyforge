@@ -108,38 +108,6 @@ const Signup = () => {
             </CardHeader>
             
             <CardContent className="space-y-4">
-              {!showEmailForm ? (
-                <>
-                  <Button
-                    variant="outline"
-                    className="w-full flex items-center justify-center gap-2"
-                    onClick={handleGoogleSignup}
-                    disabled={isLoading}
-                  >
-                    <FcGoogle className="w-5 h-5" />
-                    {isLoading ? 'Signing up...' : 'Continue with Google'}
-                  </Button>
-                  
-                  <div className="relative">
-                    <div className="absolute inset-0 flex items-center">
-                      <span className="w-full border-t" />
-                    </div>
-                    <div className="relative flex justify-center text-xs uppercase">
-                      <span className="bg-white px-2 text-gray-500">Or</span>
-                    </div>
-                  </div>
-
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    className="w-full"
-                    onClick={() => setShowEmailForm(true)}
-                    disabled={isLoading}
-                  >
-                    Sign up with Email
-                  </Button>
-                </>
-              ) : (
                 <form onSubmit={handleEmailSignup} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="name">Full Name *</Label>
@@ -196,18 +164,7 @@ const Signup = () => {
                   <Button type="submit" className="w-full" disabled={isLoading}>
                     {isLoading ? 'Creating Account...' : 'Create Account'}
                   </Button>
-                  
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => setShowEmailForm(false)}
-                    disabled={isLoading}
-                  >
-                    Back to Google Signup
-                  </Button>
                 </form>
-              )}
               
               <p className="text-center text-sm text-gray-600">
                 By continuing, you agree to our Terms of Service and Privacy Policy

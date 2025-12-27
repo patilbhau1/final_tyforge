@@ -57,16 +57,6 @@ const LoginLocal = () => {
             </CardHeader>
             
             <CardContent className="space-y-4">
-              <Button
-                variant="outline"
-                className="w-full flex items-center justify-center gap-2"
-                disabled={isLoading}
-                onClick={()=>navigate("/signup")}
-              >
-                <FcGoogle className="w-5 h-5" />
-                {isLoading ? 'Signing in...' : 'Continue with Google'}
-              </Button>
-
               {/* Localhost-only Email/Password Login */}
               {isLocalhost && (
                 <>
@@ -104,6 +94,15 @@ const LoginLocal = () => {
               )}
             </CardContent>
           </Card>
+          <div className="text-center text-sm">
+            <span className="text-gray-600">Don't have an account ? registered </span>
+            <button 
+              onClick={() => navigate('/signup')}
+              className="text-blue-600 hover:text-blue-500 font-medium"
+            >
+              here
+            </button>
+          </div>
         </div>
       </div>
 
