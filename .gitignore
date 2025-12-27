@@ -16,6 +16,9 @@ ENV/
 .env
 .env.local
 .env.production
+.env.backend.production
+.env.frontend.production
+DEPLOYEMENT_ENV_SETUP
 .env.*.local
 
 # Database
