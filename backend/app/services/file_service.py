@@ -33,6 +33,9 @@ async def save_upload_file(upload_file: UploadFile, folder: str = "projects") ->
     unique_filename = f"{uuid.uuid4()}.{file_ext}"
     file_path = os.path.join(upload_dir, unique_filename)
     
+    # Convert to forward slashes for web compatibility
+    file_path = file_path.replace('\\', '/')
+    
     # Save file
     try:
         with open(file_path, "wb") as buffer:

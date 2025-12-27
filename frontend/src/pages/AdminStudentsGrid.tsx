@@ -612,7 +612,26 @@ const AdminStudentsGrid = () => {
                                   size="sm"
                                   variant="outline"
                                   className="border-blue-300 text-blue-700"
-                                  onClick={() => window.open(`${API_BASE_URL}/api/payment/admin/orders/${selectedStudent.plan.id}/proof`, '_blank')}
+                                  onClick={async () => {
+                                    try {
+                                      const token = getAdminToken();
+                                      const response = await fetch(`${API_BASE_URL}/api/payment/admin/orders/${selectedStudent.plan.id}/proof`, {
+                                        headers: {
+                                          'Authorization': `Bearer ${token}`,
+                                        },
+                                      });
+                                      
+                                      if (response.ok) {
+                                        const blob = await response.blob();
+                                        const url = URL.createObjectURL(blob);
+                                        window.open(url, '_blank');
+                                      } else {
+                                        throw new Error('Failed to load payment proof');
+                                      }
+                                    } catch (e) {
+                                      handleApiError(e, 'Failed to view payment proof');
+                                    }
+                                  }}
                                 >
                                   <Eye className="w-4 h-4 mr-1" />
                                   View Proof
