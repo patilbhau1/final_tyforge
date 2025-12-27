@@ -39,54 +39,6 @@ const LoginLocal = () => {
     }
   };
 
-  const handleTestLogin = async () => {
-    setEmail("test@tyforge.local");
-    setPassword("test123456");
-    setTimeout(async () => {
-      try {
-        setIsLoading(true);
-        const res = await fetch(`${API_BASE}/auth/login`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email: "test@tyforge.local", password: "test123456" }),
-        });
-        if (!res.ok) throw new Error("Invalid credentials");
-        const data = await res.json();
-        localStorage.setItem("tyforge_token", data.access_token);
-        
-        // Check if user needs to complete onboarding
-        const statusRes = await fetch(`${API_BASE}/user/signup-status`, {
-          headers: { "Authorization": `Bearer ${data.access_token}` },
-        });
-        
-        if (statusRes.ok) {
-          const statusData = await statusRes.json();
-          if (!statusData.onboarding_completed) {
-            // Redirect based on current signup step
-            switch (statusData.signup_step) {
-              case 'plan_selection':
-                navigate("/select-plan");
-                break;
-              case 'project_setup':
-                navigate("/project-setup");
-                break;
-              default:
-                navigate("/dashboard");
-            }
-          } else {
-            navigate("/dashboard");
-          }
-        } else {
-          navigate("/dashboard");
-        }
-      } catch (error: any) {
-        handleApiError(error, "Login failed");
-      } finally {
-        setIsLoading(false);
-      }
-    }, 100);
-  };
-
   return (
     <div className="min-h-screen bg-white">
       <Header />
@@ -109,6 +61,7 @@ const LoginLocal = () => {
                 variant="outline"
                 className="w-full flex items-center justify-center gap-2"
                 disabled={isLoading}
+                onClick={()=>navigate("/signup")}
               >
                 <FcGoogle className="w-5 h-5" />
                 {isLoading ? 'Signing in...' : 'Continue with Google'}
@@ -122,7 +75,7 @@ const LoginLocal = () => {
                       <span className="w-full border-t" />
                     </div>
                     <div className="relative flex justify-center text-xs uppercase">
-                      <span className="bg-white px-2 text-gray-500">Or test with email</span>
+                      <span className="bg-white px-2 text-gray-500">Or login with email</span>
                     </div>
                   </div>
 
@@ -147,17 +100,6 @@ const LoginLocal = () => {
                       {isLoading ? 'Logging in...' : 'Login with Email'}
                     </Button>
                   </form>
-
-                  {/* Auto Test Login Button */}
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    className="w-full"
-                    onClick={handleTestLogin}
-                    disabled={isLoading}
-                  >
-                    🚀 Test Login (Auto-fill & Go)
-                  </Button>
                 </>
               )}
             </CardContent>
