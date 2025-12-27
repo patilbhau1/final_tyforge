@@ -39,7 +39,7 @@ ALLOWED_EXTENSIONS=pdf,zip,jpg,jpeg,png
 
 # AI APIs
 XAI_API_KEY=<YOUR_XAI_API_KEY>
-XAI_MODEL=grok-beta
+XAI_MODEL=grok-4-1-fast-non-reasoning
 GROQ_API_KEY=<YOUR_GROQ_API_KEY>
 GROQ_MODEL=llama-3.3-70b-versatile
 
