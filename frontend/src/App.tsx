@@ -27,7 +27,6 @@ import PlanSelection from "./pages/PlanSelection";
 import ServiceSelection from "./pages/ServiceSelection";
 import ProjectSetup from "./pages/ProjectSetup";
 import RequestAdminHelp from "./pages/RequestAdminHelp";
-import Profile from "./pages/Profile";
 import Guidelines from "./pages/Guidelines";
 import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
