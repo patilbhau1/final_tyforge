@@ -166,14 +166,14 @@ async def upload_project_file(
     # Update or create project record
     project = db.query(Project).filter(Project.user_id == user_id).first()
     if project:
-        project.file_path = file_path
+        project.project_file_path = file_path
         project.status = "completed"
     else:
         new_project = Project(
             user_id=user_id,
             title="Admin Uploaded Project",
             description="Project files uploaded by admin",
-            file_path=file_path,
+            project_file_path=file_path,
             status="completed"
         )
         db.add(new_project)
