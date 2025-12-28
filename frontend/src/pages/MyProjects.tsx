@@ -59,13 +59,15 @@ const MyProjects = () => {
       setLoading(true);
       
       // Fetch user's projects
-      const projectsData = await apiCall("/projects/me");
+      const projectsData = await apiCall("/api/projects/me");
       setProjects(projectsData);
 
       // Fetch user's payment status
-      const ordersData = await apiCall("/orders/me");
-      const completedOrder = ordersData.find((o: any) => o.status === 'completed');
-      setUserPlan(completedOrder);
+      const ordersData = await apiCall("/api/orders/me");
+      const completedOrder = ordersData.find((o: any) => o.status === 'paid' || 'completed');
+      if (completedOrder){
+        setUserPlan(completedOrder);
+      }
 
     } catch (error) {
       handleApiError(error, 'Failed to load projects');
