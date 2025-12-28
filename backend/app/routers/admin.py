@@ -244,7 +244,7 @@ async def share_project_url(
 @router.get("/download-project/{user_id}")
 async def download_project(
     user_id: str,
-    current_user: User = Depends(get_current_admin_user),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Download project file - requires payment verification"""
@@ -263,7 +263,7 @@ async def download_project(
     
     # Get project
     project = db.query(Project).filter(Project.user_id == user_id).first()
-    if not project or not project.file_path:
+    if not project or not project.project_file_path:
         raise HTTPException(status_code=404, detail="Project file not found")
     
     if not project.url_approved and not current_user.is_admin:
@@ -272,7 +272,7 @@ async def download_project(
             detail="Project access not yet approved by admin"
         )
     
-    file_path = project.file_path
+    file_path = project.project_file_path
     if not os.path.exists(file_path):
         raise HTTPException(status_code=404, detail="File not found on server")
     

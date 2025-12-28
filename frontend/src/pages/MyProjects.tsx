@@ -10,7 +10,7 @@ import {
   CheckCircle,
   Clock,
   AlertCircle,
-  Eye,
+  Download,
   Calendar,
   User,
   FileText,
@@ -73,6 +73,44 @@ const MyProjects = () => {
       handleApiError(error, 'Failed to load projects');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDownload = async () => {
+    try {
+      const token = getToken();
+      const userData = await apiCall('/api/users/me');
+      const user_id = userData.id ;
+      const response = await fetch(`${API_BASE_URL}/api/admin/download-project/${user_id}`, {
+        headers: {
+          "Authorization": `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Download failed');
+      }
+
+      const blob = await response.blob();
+      const contentDisposition = response.headers.get('content-disposition');
+      let filename = 'project.zip';
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename="?(.+)"?/);
+        if (filenameMatch && filenameMatch.length > 1) {
+          filename = filenameMatch[1];
+        }
+      }
+
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      handleApiError(error, 'Failed to download project');
     }
   };
 
@@ -258,18 +296,28 @@ const MyProjects = () => {
                     </div>
                   </div>
 
-                  {/* Download Section (temporarily disabled due to hosting issues) */}
+                  {/* Download Section */}
                   <div className="pt-3 border-t">
-                    <Button
-                      disabled
-                      variant="outline"
-                      className="w-full border-gray-300 text-gray-600"
-                      title="Temporarily disabled"
-                    >
-                      <Clock className="w-4 h-4 mr-2" />
-                      Download temporarily unavailable
-                    </Button>
+                    {project.status === 'completed' && project.project_file_path ? (
+                      <Button
+                        onClick={handleDownload}
+                        className="w-full bg-green-600 hover:bg-green-700"
+                      >
+                        <Download className="w-4 h-4 mr-2" />
+                        Download Project
+                      </Button>
+                    ) : (
+                      <Button
+                        disabled
+                        variant="outline"
+                        className="w-full border-gray-300 text-gray-600"
+                      >
+                        <Clock className="w-4 h-4 mr-2" />
+                        Download unavailable
+                      </Button>
+                    )}
                   </div>
+
 
                   {/* Admin Notes (if available) */}
                   {project.admin_notes && (

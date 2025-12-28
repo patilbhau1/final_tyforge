@@ -187,11 +187,31 @@ const AdminStudentsGrid = () => {
 
       if (!res.ok) throw new Error('Upload failed');
 
+      const uploadResult = await res.json();
+
       handleApiSuccess('Project file uploaded successfully!');
       setProjectFile(null);
+
+      // Now, update the project with a PATCH request
+      const studentData = students.find(s => s.user.id === studentId);
+      if (studentData && studentData.projects.length > 0) {
+        const projectId = studentData.projects[0].id;
+        const updateData = {
+          project_file_path: uploadResult.file_path,
+          project_file_original_name: projectFile.name,
+          project_url: uploadResult.file_path,
+          status: 'completed',
+        };
+
+        await adminApiCall(`/api/admin/update-project/${projectId}?${new URLSearchParams(updateData).toString()}`, {
+          method: 'PUT'
+        });
+        handleApiSuccess('Project details updated successfully!');
+      }
+
       fetchAllStudents();
     } catch (error) {
-      handleApiError(error, 'Failed to upload project file');
+      handleApiError(error, 'Failed to upload or update project');
     } finally {
       setUploading(false);
     }
