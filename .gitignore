@@ -16,6 +16,9 @@ ENV/
 .env
 .env.local
 .env.production
+.env.backend.production
+.env.frontend.production
+DEPLOYEMENT_ENV_SETUP
 .env.*.local
 
 # Database
@@ -59,3 +62,5 @@ htmlcov/
 
 # Alembic (optional: you may want to keep migrations)
 # backend_new/alembic/versions/*.pyc
+DEPLOYMENT_ENV_SETUP.md
+DEPLOYMENT_ENV_SETUP.md

@@ -172,7 +172,7 @@ const PlanSelection = () => {
               <Card
                 key={plan.id}
                 className={`relative cursor-pointer transition-all duration-200 hover:shadow-lg ${
-                  plan.name === "Standard" 
+                  plan.name === "Standard Plan" 
                     ? "border-blue-500 border-2" 
                     : "border-gray-200"
                 } ${
@@ -194,7 +194,7 @@ const PlanSelection = () => {
                 }}
               >
                 <CardHeader className="text-center pb-8">
-                  {plan.name === "Standard" && (
+                  {plan.name === "Standard Plan" && (
                     <Badge className="absolute -top-2 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white">
                       ⭐ Most Popular
                     </Badge>

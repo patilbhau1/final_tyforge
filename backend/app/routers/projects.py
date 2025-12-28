@@ -1,6 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
+import os
+from fastapi.responses import FileResponse
 from app.core.database import get_db
 from app.core.security import get_current_user, get_current_admin_user
 from app.models.user import User
@@ -125,3 +127,23 @@ async def get_all_projects(
 ):
     projects = db.query(Project).offset(skip).limit(limit).all()
     return [ProjectResponse.model_validate(project) for project in projects]
+
+@router.get("/download/me")
+async def download_my_project(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Download the current user's project file"""
+    project = db.query(Project).filter(Project.user_id == current_user.id).first()
+    if not project or not project.project_file_path:
+        raise HTTPException(status_code=404, detail="Project file not found")
+
+    file_path = project.project_file_path
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="File not found on server")
+
+    return FileResponse(
+        path=file_path,
+        filename=os.path.basename(file_path),
+        media_type="application/zip"
+    )

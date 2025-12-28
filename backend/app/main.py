@@ -31,6 +31,7 @@ app = FastAPI(
 
 # Dynamic CORS configuration based on environment
 allowed_origins = [
+    "*",
     settings.FRONTEND_URL,  # Primary frontend URL from environment
     "http://localhost:8080",
     "http://localhost:5173",
@@ -41,6 +42,7 @@ allowed_origins = [
 
 # Add production domains
 production_domains = [
+    "*",
     "https://tyforge.in",
     "https://www.tyforge.in",
     "http://tyforge.in",

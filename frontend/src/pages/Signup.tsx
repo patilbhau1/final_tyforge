@@ -6,8 +6,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { FcGoogle } from "react-icons/fc";
 import { toast } from "@/components/ui/use-toast";
 import { API_ENDPOINTS } from "@/config/api";
 
@@ -17,29 +15,7 @@ const Signup = () => {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const [showEmailForm, setShowEmailForm] = useState(false);
   const navigate = useNavigate();
-
-  const handleGoogleSignup = async () => {
-    try {
-      setIsLoading(true);
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo: window.location.origin + "/auth/callback"
-        }
-      });
-      if (error) throw error;
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleEmailSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -108,38 +84,6 @@ const Signup = () => {
             </CardHeader>
             
             <CardContent className="space-y-4">
-              {!showEmailForm ? (
-                <>
-                  <Button
-                    variant="outline"
-                    className="w-full flex items-center justify-center gap-2"
-                    onClick={handleGoogleSignup}
-                    disabled={isLoading}
-                  >
-                    <FcGoogle className="w-5 h-5" />
-                    {isLoading ? 'Signing up...' : 'Continue with Google'}
-                  </Button>
-                  
-                  <div className="relative">
-                    <div className="absolute inset-0 flex items-center">
-                      <span className="w-full border-t" />
-                    </div>
-                    <div className="relative flex justify-center text-xs uppercase">
-                      <span className="bg-white px-2 text-gray-500">Or</span>
-                    </div>
-                  </div>
-
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    className="w-full"
-                    onClick={() => setShowEmailForm(true)}
-                    disabled={isLoading}
-                  >
-                    Sign up with Email
-                  </Button>
-                </>
-              ) : (
                 <form onSubmit={handleEmailSignup} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="name">Full Name *</Label>
@@ -196,18 +140,7 @@ const Signup = () => {
                   <Button type="submit" className="w-full" disabled={isLoading}>
                     {isLoading ? 'Creating Account...' : 'Create Account'}
                   </Button>
-                  
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => setShowEmailForm(false)}
-                    disabled={isLoading}
-                  >
-                    Back to Google Signup
-                  </Button>
                 </form>
-              )}
               
               <p className="text-center text-sm text-gray-600">
                 By continuing, you agree to our Terms of Service and Privacy Policy

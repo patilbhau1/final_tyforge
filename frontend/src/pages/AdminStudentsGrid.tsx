@@ -82,6 +82,11 @@ const AdminStudentsGrid = () => {
   const [editingSynopsis, setEditingSynopsis] = useState<any>(null);
   const [synopsisStatus, setSynopsisStatus] = useState('');
   const [synopsisNotes, setSynopsisNotes] = useState('');
+  
+  // Payment proof preview state
+  const [showPaymentProofModal, setShowPaymentProofModal] = useState(false);
+  const [paymentProofUrl, setPaymentProofUrl] = useState<string>('');
+  const [paymentProofFileName, setPaymentProofFileName] = useState<string>('');
 
   useEffect(() => {
     const token = getAdminToken();
@@ -182,11 +187,31 @@ const AdminStudentsGrid = () => {
 
       if (!res.ok) throw new Error('Upload failed');
 
+      const uploadResult = await res.json();
+
       handleApiSuccess('Project file uploaded successfully!');
       setProjectFile(null);
+
+      // Now, update the project with a PATCH request
+      const studentData = students.find(s => s.user.id === studentId);
+      if (studentData && studentData.projects.length > 0) {
+        const projectId = studentData.projects[0].id;
+        const updateData = {
+          project_file_path: uploadResult.file_path,
+          project_file_original_name: projectFile.name,
+          project_url: uploadResult.file_path,
+          status: 'completed',
+        };
+
+        await adminApiCall(`/api/admin/update-project/${projectId}?${new URLSearchParams(updateData).toString()}`, {
+          method: 'PUT'
+        });
+        handleApiSuccess('Project details updated successfully!');
+      }
+
       fetchAllStudents();
     } catch (error) {
-      handleApiError(error, 'Failed to upload project file');
+      handleApiError(error, 'Failed to upload or update project');
     } finally {
       setUploading(false);
     }
@@ -284,6 +309,38 @@ const AdminStudentsGrid = () => {
     } catch (error) {
       handleApiError(error, 'Failed to update synopsis');
     }
+  };
+
+  const handleViewPaymentProof = async (orderId: string, fileName: string) => {
+    try {
+      const token = getAdminToken();
+      const response = await fetch(`${API_BASE_URL}/api/payment/admin/orders/${orderId}/proof`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        setPaymentProofUrl(url);
+        setPaymentProofFileName(fileName);
+        setShowPaymentProofModal(true);
+      } else {
+        throw new Error('Failed to load payment proof');
+      }
+    } catch (e) {
+      handleApiError(e, 'Failed to view payment proof');
+    }
+  };
+
+  const handleClosePaymentProofModal = () => {
+    setShowPaymentProofModal(false);
+    if (paymentProofUrl) {
+      URL.revokeObjectURL(paymentProofUrl);
+    }
+    setPaymentProofUrl('');
+    setPaymentProofFileName('');
   };
 
   const handleLogout = () => {
@@ -612,7 +669,7 @@ const AdminStudentsGrid = () => {
                                   size="sm"
                                   variant="outline"
                                   className="border-blue-300 text-blue-700"
-                                  onClick={() => window.open(`${API_BASE_URL}/api/payment/admin/orders/${selectedStudent.plan.id}/proof`, '_blank')}
+                                  onClick={() => handleViewPaymentProof(selectedStudent.plan.id, selectedStudent.plan.payment_proof_original_name)}
                                 >
                                   <Eye className="w-4 h-4 mr-1" />
                                   View Proof
@@ -1083,6 +1140,65 @@ const AdminStudentsGrid = () => {
               </div>
             </>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Payment Proof Preview Modal */}
+      <Dialog open={showPaymentProofModal} onOpenChange={handleClosePaymentProofModal}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Eye className="w-5 h-5" />
+              Payment Proof Preview
+            </DialogTitle>
+            <DialogDescription>
+              Review the uploaded payment proof for verification
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {paymentProofUrl && (
+              <div className="border-2 border-gray-200 rounded-lg overflow-hidden">
+                <img 
+                  src={paymentProofUrl} 
+                  alt="Payment Proof" 
+                  className="w-full h-auto max-h-[600px] object-contain bg-gray-50"
+                />
+              </div>
+            )}
+            
+            <div className="text-sm text-gray-600">
+              <p><strong>File:</strong> {paymentProofFileName}</p>
+              <p className="mt-1">Review this payment proof and then approve or reject the payment.</p>
+            </div>
+            
+            <div className="flex gap-2 pt-4 border-t">
+              <Button
+                variant="outline"
+                onClick={handleClosePaymentProofModal}
+              >
+                Close
+              </Button>
+              {selectedStudent && (
+                <Button
+                  className="bg-green-600 hover:bg-green-700 ml-auto"
+                  onClick={async () => {
+                    try {
+                      await adminApiCall(`/api/payment/admin/orders/${selectedStudent.plan.id}/approve`, { method: 'POST' });
+                      handleApiSuccess('Payment approved! Student now has access.');
+                      handleClosePaymentProofModal();
+                      fetchAllStudents();
+                    } catch (e) {
+                      handleApiError(e, 'Failed to approve payment');
+                    }
+                  }}
+                >
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                  Approve Payment
+                </Button>
+              )}
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

@@ -14,7 +14,18 @@ const BlackBook = () => {
       const res = await fetch(`${API_BASE}/blackbook/download`, {
         headers: { Authorization: `Bearer ${getToken()}` },
       });
-      if (!res.ok) throw new Error("Download failed");
+      if (!res.ok) {
+        // Try to get the error message from the response body
+        let errorMessage = "Download failed";
+        try {
+          const errorData = await res.json();
+          errorMessage = errorData.detail || errorData.message || errorMessage;
+        } catch (e) {
+          // If response is not JSON, use status text
+          errorMessage = `HTTP ${res.status}: ${res.statusText}`;
+        }
+        throw new Error(errorMessage);
+      }
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');

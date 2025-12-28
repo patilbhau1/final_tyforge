@@ -9,7 +9,7 @@ router = APIRouter(prefix="/api/plans", tags=["Plans"])
 
 @router.get("/", response_model=List[PlanResponse])
 async def get_all_plans(db: Session = Depends(get_db)):
-    plans = db.query(Plan).all()
+    plans = db.query(Plan).order_by(Plan.price.asc()).all()
     return [PlanResponse.model_validate(plan) for plan in plans]
 
 @router.get("/{plan_id}", response_model=PlanResponse)

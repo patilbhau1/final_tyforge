@@ -89,7 +89,10 @@ async def admin_get_payment_proof(
     if not os.path.exists(order.payment_proof_path):
         raise HTTPException(status_code=404, detail="Payment proof file missing")
 
-    return FileResponse(order.payment_proof_path, media_type="image/*", filename=order.payment_proof_original_name or "payment.png")
+    # Normalize path for cross-platform compatibility
+    normalized_path = os.path.normpath(order.payment_proof_path)
+    
+    return FileResponse(normalized_path, media_type="image/*", filename=order.payment_proof_original_name or "payment.png")
 
 
 @router.post("/admin/orders/{order_id}/approve")

@@ -9,6 +9,7 @@ from app.models.project import Project
 from app.schemas.admin_request import AdminRequestCreate, AdminRequestResponse, AdminRequestUpdate
 from app.services.file_service import save_upload_file
 from fastapi.responses import FileResponse
+from fastapi import Response
 from pydantic import BaseModel
 import os
 
@@ -100,7 +101,7 @@ async def download_blackbook(
     # Look for blackbook.pdf in uploads/blackbook
     blackbook_path = "uploads/blackbook/blackbook.pdf"
     if not os.path.exists(blackbook_path):
-        raise HTTPException(status_code=404, detail="BlackBook not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, message="No blackbook available right now")
     
     return FileResponse(
         path=blackbook_path,
@@ -166,14 +167,16 @@ async def upload_project_file(
     # Update or create project record
     project = db.query(Project).filter(Project.user_id == user_id).first()
     if project:
-        project.file_path = file_path
+        project.project_file_path = file_path
+        project.project_file_original_name = file.filename
         project.status = "completed"
     else:
         new_project = Project(
             user_id=user_id,
             title="Admin Uploaded Project",
             description="Project files uploaded by admin",
-            file_path=file_path,
+            project_file_path=file_path,
+            project_file_original_name=file.filename,
             status="completed"
         )
         db.add(new_project)
@@ -244,7 +247,7 @@ async def share_project_url(
 @router.get("/download-project/{user_id}")
 async def download_project(
     user_id: str,
-    current_user: User = Depends(get_current_admin_user),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Download project file - requires payment verification"""
@@ -261,9 +264,12 @@ async def download_project(
             detail="Payment required to download project files"
         )
     
-    # Get project
-    project = db.query(Project).filter(Project.user_id == user_id).first()
-    if not project or not project.file_path:
+    # Get project - find the one with a file path
+    project = db.query(Project).filter(
+        Project.user_id == user_id,
+        Project.project_file_path.isnot(None)
+    ).first()
+    if not project or not project.project_file_path:
         raise HTTPException(status_code=404, detail="Project file not found")
     
     if not project.url_approved and not current_user.is_admin:
@@ -272,15 +278,23 @@ async def download_project(
             detail="Project access not yet approved by admin"
         )
     
-    file_path = project.file_path
+    file_path = project.project_file_path
     if not os.path.exists(file_path):
         raise HTTPException(status_code=404, detail="File not found on server")
     
-    return FileResponse(
+    # Use original filename if available, otherwise fallback to UUID filename
+    download_filename = project.project_file_original_name or os.path.basename(file_path)
+    
+    response = FileResponse(
         path=file_path,
-        filename=os.path.basename(file_path),
+        filename=download_filename,
         media_type="application/zip"
     )
+    
+    # Ensure content-disposition header is set correctly
+    response.headers["Content-Disposition"] = f"attachment; filename=\"{download_filename}\""
+    
+    return response
 
 # Update Project Status and Notes (for student view)
 @router.put("/update-project/{project_id}")
