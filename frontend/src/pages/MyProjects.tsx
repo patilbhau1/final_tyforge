@@ -95,10 +95,15 @@ const MyProjects = () => {
       const contentDisposition = response.headers.get('content-disposition');
       let filename = 'project.zip';
       if (contentDisposition) {
-        const filenameMatch = contentDisposition.match(/filename="?(.+)"?/);
+        const filenameMatch = contentDisposition.match(/filename="?(.+?)"/);
         if (filenameMatch && filenameMatch.length > 1) {
           filename = filenameMatch[1];
         }
+      }
+
+      // Ensure filename has .zip extension
+      if (!filename.toLowerCase().endsWith('.zip')) {
+        filename = filename.replace(/\.[^.]*$/, '') + '.zip';
       }
 
       const url = window.URL.createObjectURL(blob);

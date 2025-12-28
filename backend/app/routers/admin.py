@@ -9,6 +9,7 @@ from app.models.project import Project
 from app.schemas.admin_request import AdminRequestCreate, AdminRequestResponse, AdminRequestUpdate
 from app.services.file_service import save_upload_file
 from fastapi.responses import FileResponse
+from fastapi import Response
 from pydantic import BaseModel
 import os
 
@@ -167,6 +168,7 @@ async def upload_project_file(
     project = db.query(Project).filter(Project.user_id == user_id).first()
     if project:
         project.project_file_path = file_path
+        project.project_file_original_name = file.filename
         project.status = "completed"
     else:
         new_project = Project(
@@ -174,6 +176,7 @@ async def upload_project_file(
             title="Admin Uploaded Project",
             description="Project files uploaded by admin",
             project_file_path=file_path,
+            project_file_original_name=file.filename,
             status="completed"
         )
         db.add(new_project)
@@ -261,8 +264,11 @@ async def download_project(
             detail="Payment required to download project files"
         )
     
-    # Get project
-    project = db.query(Project).filter(Project.user_id == user_id).first()
+    # Get project - find the one with a file path
+    project = db.query(Project).filter(
+        Project.user_id == user_id,
+        Project.project_file_path.isnot(None)
+    ).first()
     if not project or not project.project_file_path:
         raise HTTPException(status_code=404, detail="Project file not found")
     
@@ -276,11 +282,19 @@ async def download_project(
     if not os.path.exists(file_path):
         raise HTTPException(status_code=404, detail="File not found on server")
     
-    return FileResponse(
+    # Use original filename if available, otherwise fallback to UUID filename
+    download_filename = project.project_file_original_name or os.path.basename(file_path)
+    
+    response = FileResponse(
         path=file_path,
-        filename=os.path.basename(file_path),
+        filename=download_filename,
         media_type="application/zip"
     )
+    
+    # Ensure content-disposition header is set correctly
+    response.headers["Content-Disposition"] = f"attachment; filename=\"{download_filename}\""
+    
+    return response
 
 # Update Project Status and Notes (for student view)
 @router.put("/update-project/{project_id}")
