@@ -101,7 +101,7 @@ async def download_blackbook(
     # Look for blackbook.pdf in uploads/blackbook
     blackbook_path = "uploads/blackbook/blackbook.pdf"
     if not os.path.exists(blackbook_path):
-        raise HTTPException(status_code=404, detail="BlackBook not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, message="No blackbook available right now")
     
     return FileResponse(
         path=blackbook_path,
