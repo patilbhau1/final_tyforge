@@ -30,9 +30,6 @@ const IdeaGenerator = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const apiKey = import.meta.env.VITE_GROQ_API_KEY;
-  const apiUrl = import.meta.env.VITE_GROQ_API_URI;
-
   const generateProjectIdea = async (interests: string) => {
     // Fallback ideas if API fails
     const fallbackIdeas = [
@@ -43,22 +40,6 @@ const IdeaGenerator = () => {
       `Build a real-time chat application with ${interests} focus using Socket.io, Node.js, and React with MongoDB.`
     ];
 
-    const systemPrompt = `You are a final year engineering project guide. Generate a unique and practical software project idea based on the user's interests. Be specific, innovative in just less than 40 words, and mention the tech stack if relevant.`;
-    
-    // Check if API key is available
-    if (!apiKey) {
-      console.warn('No API key available, using fallback');
-      return fallbackIdeas[Math.floor(Math.random() * fallbackIdeas.length)];
-    }
-    
-    const payload = {
-      contents: [
-        {
-          parts: [{ text: systemPrompt + ` My interests are: ${interests}` }]
-        }
-      ]
-    };
-    
     try {
       // Use backend API - works for both logged-in and guest users
       const token = localStorage.getItem("tyforge_token");
