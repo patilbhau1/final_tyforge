@@ -170,6 +170,17 @@ Assistant: "Nice to meet you, Sarah! What's the name of your project?"`;
       } catch (apiError) {
         console.error('Chatbot API Error:', apiError);
         
+        // Check if it's a 404 unauthorized error
+        if (axios.isAxiosError(apiError) && apiError.response?.status === 401) {
+          setError('You need to login or signup first to chat with us. Please log in to continue.');
+          setMessages(prev => [...prev, { 
+            role: 'assistant', 
+            content: 'Please log in or create an account to use the chat feature.' 
+          }]);
+          setIsLoading(false);
+          return;
+        }
+        
         // Fallback to intelligent responses if API fails
         console.log('API failed, using intelligent fallback responses');
         const conversationContext = newMessages.map(msg => `${msg.role}: ${msg.content}`).join('\n');
@@ -193,7 +204,7 @@ Assistant: "Nice to meet you, Sarah! What's the name of your project?"`;
         setError('AI service quota exceeded. Using intelligent responses.');
         
         // Generate intelligent fallback response
-        const conversationContext = newMessages.map(msg => `${msg.role}: ${msg.content}`).join('\n');
+        const conversationContext = messages.map(msg => `${msg.role}: ${msg.content}`).join('\n');
         const fallbackResponse = getChatbotFallbackResponse(userInput, plan, conversationContext);
         
         setMessages(prev => [...prev, { role: 'assistant', content: fallbackResponse }]);
@@ -452,7 +463,7 @@ Assistant: "Nice to meet you, Sarah! What's the name of your project?"`;
                 placeholder="Type your message..."
                 disabled={isLoading}
                 className="flex-1"
-                ref={inputRef}
+                ref={inputRef as any}
               />
               <Button 
                 type="submit" 
