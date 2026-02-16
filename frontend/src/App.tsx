@@ -1,4 +1,5 @@
 
+import { Analytics } from "@vercel/analytics/react";
 import { Toaster } from "@/components/ui/toaster";
 import BottomNavigation from "@/components/BottomNavigation";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -90,6 +91,7 @@ const App = () => (
       <BrowserRouter>
         <AppContent />
       </BrowserRouter>
+      <Analytics />
     </TooltipProvider>
   </QueryClientProvider>
 );
